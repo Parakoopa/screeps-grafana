@@ -43,6 +43,9 @@ class ScreepsStatsd
     if(token != "" && succes)
       @getMemory()
       return
+    if(process.env.SCREEPS_BASIC_AUTH != 0)
+      @signinBasicAuth()
+      return
     @client = new StatsD host: process.env.GRAPHITE_PORT_8125_UDP_ADDR
     console.log "New login request - " + new Date()
     options =
@@ -53,6 +56,22 @@ class ScreepsStatsd
         email: process.env.SCREEPS_EMAIL
         password: process.env.SCREEPS_PASSWORD
     rp(options).then (x) =>
+      token = x.token
+      @getMemory()
+
+  ###
+  Sign-in using HTTP Basic Authentication (username & password).
+  This non-standard way of signing in is used by some private server
+  auth-mods. This can be disabled/enable via env-variables (see README).
+  ###
+  signinBasicAuth: () =>
+    @client = new StatsD host: process.env.GRAPHITE_PORT_8125_UDP_ADDR
+    console.log "New login request via HTTP Basic - " + new Date()
+    options =
+      uri: process.env.SCREEPS_HOSTNAME + '/api/auth/signin'
+      json: true
+      method: 'POST'
+    rp(options).auth(process.env.SCREEPS_USERNAME, process.env.SCREEPS_PASSWORD, true).then (x) =>
       token = x.token
       @getMemory()
 
